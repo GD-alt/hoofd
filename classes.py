@@ -8,12 +8,16 @@ class Scene:
     A class to represent a scene in the game.
     name — the name of the scene.
     text — the text that will be displayed in the scene.
-    exits — a dictionary with the names of the exits and the objs of the scenes/routers to which they lead.
+    exits — a dictionary with the names of the exits and the objs of the scenes to which they lead.
     image — the path to the image that will be displayed in the scene (if empty, will appear empty).
     on_enter — actions to be executed when the scene is entered and conditions to match.
     if_texts — a list of tuples with the text to be displayed and the condition to match.
     if_text_additions — a list of tuples with the text to be added to the scene and the condition to match.
     if_images — a list of tuples with the path to the image to be added to the scene and the condition to match.
+    speaker — the name of the speaker.
+    if_speakers — a list of tuples with the name of the speaker and the condition to match.
+    enable_formatting — a boolean to enable or disable formatting (variables, etc.).
+    sanitize — a boolean to enable or disable sanitization.
     """
     id_: str
     header: str
@@ -26,6 +30,8 @@ class Scene:
     if_images: List[tuple[str, str]] = field(default_factory=list)
     speaker: str = ''
     if_speakers: List[tuple[str, str]] = field(default_factory=list)
+    enable_formatting: bool = True
+    sanitize: bool = False
 
 
 @dataclass

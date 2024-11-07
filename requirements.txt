@@ -2,3 +2,4 @@ textual
 tomli-w
 bson
 meval
+rich

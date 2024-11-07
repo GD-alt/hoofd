@@ -137,6 +137,8 @@ GLOBAL_ADDITIONS = [
 
 GLOBAL_IMAGES = []
 
+MY_VARS = {}
+
 START = 'Start'
 LOAD = 'Load'
 SAVE = 'Save'

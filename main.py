@@ -21,6 +21,8 @@ import scenes
 
 from meval import meval
 
+from rich.markup import escape
+
 CONFIG = tomllib.loads(Path('config.toml').read_text('utf-8'))
 
 COLOR = CONFIG['color']
@@ -54,7 +56,7 @@ COLORS = {
     'img': COLOR
 }
 
-LANGUAGES = ['en', 'ru']
+LANGUAGES = CONFIG['languages']
 
 
 class ImageBar(Widget):
@@ -80,8 +82,6 @@ class MainText(Widget):
 
         if self.speaker:
             text = f'[underline2]{self.speaker}[/]\n\n{text}'
-
-        text += '\n'
 
         text_widget = Label(
             text,
@@ -349,6 +349,24 @@ class QuestApp(App):
             SYS=SYSTEM_SCENES
         )
 
+        my_vars = eval(f'scenes.scenes_{self.language}.MY_VARS')
+
+        for var, formula in my_vars.items():
+            self.variables[var] = await meval(
+                formula,
+                globals(),
+                player=self.player,
+                mods=self.modifiers,
+                modsdict=self.modifiers_dict(),
+                vars=self.variables,
+                scenes=scenes,
+                inventory=self.player.inventory,
+                invdict=self.player.inventory_dict(),
+                random=random,
+                rnum=random_number,
+                SYS=SYSTEM_SCENES
+            )
+
         image_bar = ImageBar(classes='height60', id='image-bar')
 
         await self.mount(image_bar)
@@ -370,7 +388,8 @@ class QuestApp(App):
                     invdict=self.player.inventory_dict(),
                     random=random,
                     rnum=random_number,
-                    SYS=SYSTEM_SCENES
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
             ):
                 text = t
 
@@ -389,7 +408,8 @@ class QuestApp(App):
                     invdict=self.player.inventory_dict(),
                     random=random,
                     rnum=random_number,
-                    SYS=SYSTEM_SCENES
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
             ):
                 text += '\n' + t
 
@@ -406,7 +426,8 @@ class QuestApp(App):
                     invdict=self.player.inventory_dict(),
                     random=random,
                     rnum=random_number,
-                    SYS=SYSTEM_SCENES
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
             ):
                 text += '\n' + t
 
@@ -425,7 +446,8 @@ class QuestApp(App):
                     invdict=self.player.inventory_dict(),
                     random=random,
                     rnum=random_number,
-                    SYS=SYSTEM_SCENES
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
             ):
                 img = t
 
@@ -442,7 +464,8 @@ class QuestApp(App):
                     invdict=self.player.inventory_dict(),
                     random=random,
                     rnum=random_number,
-                    SYS=SYSTEM_SCENES
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
             ):
                 img = t
 
@@ -464,9 +487,29 @@ class QuestApp(App):
                 inventory=self.player.inventory,
                 invdict=self.player.inventory_dict(),
                 random=random,
-                rnum=random_number
+                rnum=random_number,
+                SYS=SYSTEM_SCENES,
+                MY=my_vars
             ):
                 speaker = t
+
+        if self.player.current.sanitize:
+            text = escape(text)
+
+        if self.player.current.enable_formatting:
+            text = text.format(
+                player=self.player,
+                mods=self.modifiers,
+                modsdict=self.modifiers_dict(),
+                vars=self.variables,
+                scenes=scenes,
+                inventory=self.player.inventory,
+                invdict=self.player.inventory_dict(),
+                random=random,
+                rnum=random_number,
+                SYS=SYSTEM_SCENES,
+                MY=my_vars
+            )
 
         main_text.text = text
         main_text.speaker = speaker
@@ -477,7 +520,22 @@ class QuestApp(App):
             main_text.inventory = self.player.inventory_with_count()
 
         choices = [
-            Button(k, id=f'button{i}') for i, (k, (v, cond)) in enumerate(self.player.current.exits)
+            Button(
+                k.format(
+                    player=self.player,
+                    mods=self.modifiers,
+                    modsdict=self.modifiers_dict(),
+                    vars=self.variables,
+                    scenes=scenes,
+                    inventory=self.player.inventory,
+                    invdict=self.player.inventory_dict(),
+                    random=random,
+                    rnum=random_number,
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
+                ) if self.player.current.enable_formatting else k,
+                id=f'button{i}'
+            ) for i, (k, (v, cond)) in enumerate(self.player.current.exits)
             if await meval(
                 cond,
                 globals(),
@@ -489,7 +547,9 @@ class QuestApp(App):
                 inventory=self.player.inventory,
                 invdict=self.player.inventory_dict(),
                 random=random,
-                rnum=random_number
+                rnum=random_number,
+                SYS=SYSTEM_SCENES,
+                MY=my_vars
             )
         ]
 
@@ -719,6 +779,24 @@ class QuestApp(App):
             SYS=SYSTEM_SCENES
         )
 
+        my_vars = eval(f'scenes.scenes_{self.language}.MY_VARS')
+
+        for var, formula in my_vars.items():
+            self.variables[var] = await meval(
+                formula,
+                globals(),
+                player=self.player,
+                mods=self.modifiers,
+                modsdict=self.modifiers_dict(),
+                vars=self.variables,
+                scenes=scenes,
+                inventory=self.player.inventory,
+                invdict=self.player.inventory_dict(),
+                random=random,
+                rnum=random_number,
+                SYS=SYSTEM_SCENES
+            )
+
         self.set_focus(self.query_one('.no-display'))
 
         text = self.player.current.text
@@ -736,7 +814,8 @@ class QuestApp(App):
                     invdict=self.player.inventory_dict(),
                     random=random,
                     rnum=random_number,
-                    SYS=SYSTEM_SCENES
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
             ):
                 text = t
 
@@ -755,7 +834,8 @@ class QuestApp(App):
                     invdict=self.player.inventory_dict(),
                     random=random,
                     rnum=random_number,
-                    SYS=SYSTEM_SCENES
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
             ):
                 text += '\n' + t
 
@@ -772,7 +852,8 @@ class QuestApp(App):
                     invdict=self.player.inventory_dict(),
                     random=random,
                     rnum=random_number,
-                    SYS=SYSTEM_SCENES
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
             ):
                 text += '\n' + t
 
@@ -791,7 +872,8 @@ class QuestApp(App):
                     invdict=self.player.inventory_dict(),
                     random=random,
                     rnum=random_number,
-                    SYS=SYSTEM_SCENES
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
             ):
                 img = t
 
@@ -808,7 +890,8 @@ class QuestApp(App):
                     invdict=self.player.inventory_dict(),
                     random=random,
                     rnum=random_number,
-                    SYS=SYSTEM_SCENES
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
             ):
                 img = t
 
@@ -832,9 +915,29 @@ class QuestApp(App):
                 inventory=self.player.inventory,
                 invdict=self.player.inventory_dict(),
                 random=random,
-                rnum=random_number
+                rnum=random_number,
+                SYS=SYSTEM_SCENES,
+                MY=my_vars
             ):
                 speaker = t
+
+        if self.player.current.sanitize:
+            text = escape(text)
+
+        if self.player.current.enable_formatting:
+            text = text.format(
+                player=self.player,
+                mods=self.modifiers,
+                modsdict=self.modifiers_dict(),
+                vars=self.variables,
+                scenes=scenes,
+                inventory=self.player.inventory,
+                invdict=self.player.inventory_dict(),
+                random=random,
+                rnum=random_number,
+                SYS=SYSTEM_SCENES,
+                MY=my_vars
+            )
 
         main_text.text = text
         main_text.speaker = speaker
@@ -853,6 +956,7 @@ class QuestApp(App):
                     random=random,
                     rnum=random_number,
                     SYS=SYSTEM_SCENES,
+                    MY=my_vars,
             ):
                 target, action_type, item = action
 
@@ -996,8 +1100,23 @@ class QuestApp(App):
                 await b.remove()
 
         choices = [
-            Button(k, id=f'button{i}') for i, (k, (v, cond)) in enumerate(self.player.current.exits) if
-            await meval(
+            Button(
+                k.format(
+                    player=self.player,
+                    mods=self.modifiers,
+                    modsdict=self.modifiers_dict(),
+                    vars=self.variables,
+                    scenes=scenes,
+                    inventory=self.player.inventory,
+                    invdict=self.player.inventory_dict(),
+                    random=random,
+                    rnum=random_number,
+                    SYS=SYSTEM_SCENES,
+                    MY=my_vars
+                ) if self.player.current.enable_formatting else k,
+                id=f'button{i}'
+            ) for i, (k, (v, cond)) in enumerate(self.player.current.exits)
+            if await meval(
                 cond,
                 globals(),
                 player=self.player,
@@ -1008,7 +1127,9 @@ class QuestApp(App):
                 inventory=self.player.inventory,
                 invdict=self.player.inventory_dict(),
                 random=random,
-                rnum=random_number
+                rnum=random_number,
+                SYS=SYSTEM_SCENES,
+                MY=my_vars
             )
         ]
 

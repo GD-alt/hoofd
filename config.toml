@@ -4,4 +4,5 @@ background = "black"
 utilise_inventory = true
 utilise_saveload = true
 language = "en"
-credits = "Meow\n"
+languages = ["en"]
+credits = "Meow"

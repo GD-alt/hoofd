@@ -12,6 +12,10 @@ Hoofd TUIQ is a text-based game engine built with Python and Textual that allows
 - Image display support (converted to authentic ASCII art)
 - Scene conditions and state tracking
 - Dynamic text and image changes based on game state
+- Modifiers system
+- Variables system
+- Speaker system with conditional changes
+- Text formatting and sanitization options
 
 ## Project Structure
 ```
@@ -20,8 +24,7 @@ project/
 ├── qtui/
 │   ├── scenes/      # Scene definitions for different languages
 │   │   ├── __init__.py
-│   │   ├── scenes_en.py
-│   │   └── scenes_ru.py
+│   │   └── scenes_[lang].py
 │   ├── classes.py   # Core classes
 │   ├── config.toml  # Configuration file
 │   └── main.py      # Main game engine
@@ -34,73 +37,89 @@ color = "green"             # Text color
 background = "black"        # Background color
 utilise_inventory = true    # Enable inventory system
 utilise_saveload = true     # Enable save/load functionality
-language = "en"            # Default language
+language = "en"             # Default language
+languages = ["en"]          # Available languages
 credits = "Credits text"    # Credits text
 ```
 
-## Creating Scenes
-Scenes are defined in the `scenes_[language].py` files. Here's an example:
+## Scene Definition
+Scenes are defined in the `scenes_[language].py` files using the Scene class:
 
 ```python
 from classes import Scene
 
 example_scene = Scene(
-    id_='example_scene',        # Unique scene identifier, matches variable name
+    id_='example_scene',        # Unique scene identifier (matches variable name)
     header='Scene Title',       # Scene title
     text='Scene description',   # Main text
-    image='image.jpg',         # Image file from assets folder
-    speaker='Character Name',   # Speaking character name
+    image='image.jpg',         # Image file from assets folder (optional)
+    speaker='Character Name',   # Speaking character name (optional)
     exits=[                     # Available choices
         ('Choice text', ('next_scene', 'condition')),
     ],
     on_enter=[                 # Actions when entering scene
-        (('inventory', 'add', 'Item'), 'condition'),
+        (('action_type', 'action', 'value'), 'condition'),
     ],
     if_texts=[                 # Conditional text changes
         ('Alternative text', 'condition'),
     ],
-    if_images=[               # Conditional image changes
+    if_text_additions=[        # Conditional text additions
+        ('Additional text', 'condition'),
+    ],
+    if_images=[                # Conditional image changes
         ('alt_image.jpg', 'condition'),
     ],
-    if_speakers=[             # Conditional speaker changes
+    if_speakers=[              # Conditional speaker changes
         ('Alt Speaker', 'condition'),
-    ]
+    ],
+    enable_formatting=True,     # Enable variable formatting in text
+    sanitize=False             # Enable text sanitization
 )
 ```
 
-## Actions and Conditions
+## Actions System
 
-### Available Actions
+### Action Types
+1. Inventory Actions
 ```python
-# Inventory actions
 (('inventory', 'add', 'Item'), 'condition')
-(('inventory', 'add-many', ('Item', 5)), 'condition')
+(('inventory', 'add-many', ('Item', quantity)), 'condition')
 (('inventory', 'remove', 'Item'), 'condition')
 (('inventory', 'remove-all', 'Item'), 'condition')
 (('inventory', 'clear', ''), 'condition')
+```
 
-# Modifier actions
-(('inventory', 'add', 'mod'), 'condition')
-(('inventory', 'add-many', ('mod', 5)), 'condition')
-(('inventory', 'remove', 'mod'), 'condition')
-(('inventory', 'remove-all', 'mod'), 'condition')
-(('inventory', 'clear', ''), 'condition')
+2. Modifier Actions
+```python
+(('modifiers', 'add', 'mod'), 'condition')
+(('modifiers', 'add-many', ('mod', quantity)), 'condition')
+(('modifiers', 'remove', 'mod'), 'condition')
+(('modifiers', 'remove-all', 'mod'), 'condition')
+(('modifiers', 'clear', ''), 'condition')
+```
 
-# Variable actions
+3. Variable Actions
+```python
 (('variables', 'add', ('var', value)), 'condition')
 (('variables', 'remove', 'var'), 'condition')
 (('variables', 'update', ('var', value)), 'condition')
 (('variables', 'inc', ('var', amount)), 'condition')
 (('variables', 'dec', ('var', amount)), 'condition')
+(('variables', 'set', ('var', 'expression')), 'condition')
+```
 
-# Game actions
+4. Game Actions
+```python
 (('game', 'exit', ''), 'condition')
 (('game', 'goto', 'scene_id'), 'condition')
 (('game', 'restart', ''), 'condition')
 (('game', 'notify', 'message'), 'condition')
+(('game', 'destroy', ''), 'condition')
+(('game', 'load', 'silent'), 'condition')
+(('game', 'save', 'silent'), 'condition')
 ```
 
-### Condition Context Variables
+## Condition Context
 In conditions, you have access to:
 - `player`: Player object
 - `inventory`: List of inventory items
@@ -110,32 +129,30 @@ In conditions, you have access to:
 - `vars`: Dictionary of variables
 - `random`: Random module
 - `rnum`: Random number (0-100)
+- `SYS`: System scenes
+- `MY`: Custom variables
 
-## Example Game Implementation
-
+## Required Language Constants
+Each language file must define:
 ```python
-# scenes_en.py
-from classes import Scene
-
-start = Scene(
-    id_='start',
-    header='Forest',
-    text='You find yourself in a dark forest.',
-    image='forest.jpg',
-    exits=[
-        ('Go north', ('north', 'True')),
-    ],
-    on_enter=[
-        (('inventory', 'add', 'Map'), '"Map" not in inventory'),
-    ]
-)
-
-# Add more scenes...
-
-# Required constants for UI
 START = 'Start'
 LOAD = 'Load'
 SAVE = 'Save'
+LOAD_SHORT = 'L'
+SAVE_SHORT = 'S'
 CREDITS = 'Credits'
 EXIT = 'Exit'
 LANGUAGE = 'Language'
+SAVED = 'Saved'
+LOADED = 'Loaded'
+RESTART_NEEDED = 'Restart needed'
+```
+
+## Global Scene Modifications
+Define these lists in language files:
+```python
+GLOBAL_ADDITIONS = []  # Global text additions
+GLOBAL_IMAGES = []     # Global image changes
+VARS = {}             # Global variables
+MY_VARS = {}          # Custom variables
+```
