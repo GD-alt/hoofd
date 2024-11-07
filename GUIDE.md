@@ -1,145 +1,141 @@
-# Visual Novel Development Guide
+# Hoofd TUIQ Engine Guide
 
-This guide will help you create a visual novel using this engine. Let's break down the features and implementation details.
+## Overview
+Hoofd TUIQ is a text-based game engine built with Python and Textual that allows you to create interactive narrative games with choices, inventory systems, and multiple languages support.
 
-## 1. Configuration Setup
+## Features
+- Text-based narrative gameplay
+- Choice-based progression
+- Inventory system
+- Save/Load functionality
+- Multiple language support
+- Image display support (converted to authentic ASCII art)
+- Scene conditions and state tracking
+- Dynamic text and image changes based on game state
 
-Create a `config.toml` file with the following settings:
-```toml
-name = "Your Game Name"
-credits = "Your Credits Text"
-color = "white"  # Main UI color
-background = "black"  # Main UI background color
-utilise_inventory = true  # Enable/disable inventory system
-utilise_saveload = true  # Enable/disable save/load functionality
+## Project Structure
+```
+project/
+├── assets/           # Images and other media files
+├── qtui/
+│   ├── scenes/      # Scene definitions for different languages
+│   │   ├── __init__.py
+│   │   ├── scenes_en.py
+│   │   └── scenes_ru.py
+│   ├── classes.py   # Core classes
+│   ├── config.toml  # Configuration file
+│   └── main.py      # Main game engine
 ```
 
-## 2. Scene Structure
+## Configuration (config.toml)
+```toml
+name = "Game Name"           # Game title
+color = "green"             # Text color
+background = "black"        # Background color
+utilise_inventory = true    # Enable inventory system
+utilise_saveload = true     # Enable save/load functionality
+language = "en"            # Default language
+credits = "Credits text"    # Credits text
+```
 
-Create scenes in `scenes.py`. Each scene requires:
+## Creating Scenes
+Scenes are defined in the `scenes_[language].py` files. Here's an example:
 
 ```python
 from classes import Scene
 
-scene_name = Scene(
-    id_="unique_scene_id",
-    header="Scene Name",
-    text="Scene description text",
-    image="image_filename.png",  # Store in assets folder
-    exits=[
-        ("Choice Text", ("next_scene", "condition")),  # Conditional transition
-    ]
-)
-```
-
-### Scene Properties:
-- `id_`: Unique identifier (has to match the variable name)
-- `name`: Scene name
-- `text`: Main scene text
-- `image`: Scene image filename
-- `exits`: List of tuples containing choices and their destinations
-
-## 3. Advanced Scene Features
-
-### 3.1 Conditional Text
-```python
-scene = Scene(
-    # ...
-    if_texts=[
-        ("Alternative text", "condition_expression"),
+example_scene = Scene(
+    id_='example_scene',        # Unique scene identifier, matches variable name
+    header='Scene Title',       # Scene title
+    text='Scene description',   # Main text
+    image='image.jpg',         # Image file from assets folder
+    speaker='Character Name',   # Speaking character name
+    exits=[                     # Available choices
+        ('Choice text', ('next_scene', 'condition')),
     ],
-    if_text_additions=[
-        ("Additional text", "condition_expression"),
+    on_enter=[                 # Actions when entering scene
+        (('inventory', 'add', 'Item'), 'condition'),
+    ],
+    if_texts=[                 # Conditional text changes
+        ('Alternative text', 'condition'),
+    ],
+    if_images=[               # Conditional image changes
+        ('alt_image.jpg', 'condition'),
+    ],
+    if_speakers=[             # Conditional speaker changes
+        ('Alt Speaker', 'condition'),
     ]
 )
 ```
 
-### 3.2 Conditional Images
+## Actions and Conditions
+
+### Available Actions
 ```python
-scene = Scene(
-    # ...
-    if_images=[
-        ("alternative_image.png", "condition_expression"),
-    ]
-)
+# Inventory actions
+(('inventory', 'add', 'Item'), 'condition')
+(('inventory', 'add-many', ('Item', 5)), 'condition')
+(('inventory', 'remove', 'Item'), 'condition')
+(('inventory', 'remove-all', 'Item'), 'condition')
+(('inventory', 'clear', ''), 'condition')
+
+# Modifier actions
+(('inventory', 'add', 'mod'), 'condition')
+(('inventory', 'add-many', ('mod', 5)), 'condition')
+(('inventory', 'remove', 'mod'), 'condition')
+(('inventory', 'remove-all', 'mod'), 'condition')
+(('inventory', 'clear', ''), 'condition')
+
+# Variable actions
+(('variables', 'add', ('var', value)), 'condition')
+(('variables', 'remove', 'var'), 'condition')
+(('variables', 'update', ('var', value)), 'condition')
+(('variables', 'inc', ('var', amount)), 'condition')
+(('variables', 'dec', ('var', amount)), 'condition')
+
+# Game actions
+(('game', 'exit', ''), 'condition')
+(('game', 'goto', 'scene_id'), 'condition')
+(('game', 'restart', ''), 'condition')
+(('game', 'notify', 'message'), 'condition')
 ```
 
-### 3.3 Scene Actions
+### Condition Context Variables
+In conditions, you have access to:
+- `player`: Player object
+- `inventory`: List of inventory items
+- `invdict`: Dictionary of inventory items and counts
+- `mods`: List of modifiers
+- `modsdict`: Dictionary of modifiers and counts
+- `vars`: Dictionary of variables
+- `random`: Random module
+- `rnum`: Random number (0-100)
+
+## Example Game Implementation
+
 ```python
-scene = Scene(
-    # ...
+# scenes_en.py
+from classes import Scene
+
+start = Scene(
+    id_='start',
+    header='Forest',
+    text='You find yourself in a dark forest.',
+    image='forest.jpg',
+    exits=[
+        ('Go north', ('north', 'True')),
+    ],
     on_enter=[
-        (("inventory", "add", "item"), "condition"),
-        (("variables", "set", ("var_name", "value")), "condition"),
+        (('inventory', 'add', 'Map'), '"Map" not in inventory'),
     ]
 )
-```
 
-## 4. Game State Management
+# Add more scenes...
 
-### 4.1 Inventory System
-- Add items: `("inventory", "add", "item_name")`
-- Add multiple items: `("inventory", "add-many", ("item_name", quantity))`
-- Remove items: `("inventory", "remove", "item_name")`
-- Remove all of an item: `("inventory", "remove-all", "item_name")`
-- Clear inventory: `("inventory", "clear", None)`
-
-### 4.2 Variables
-- Set variable: `("variables", "set", ("var_name", "value"))`
-- Update variable: `("variables", "update", ("var_name", "new_value"))`
-- Increment: `("variables", "inc", ("var_name", amount))`
-- Decrement: `("variables", "dec", ("var_name", amount))`
-- Remove variable: `("variables", "remove", "var_name")`
-- Clear variables: `("variables", "clear", None)`
-
-### 4.3 Modifiers
-- Add modifier: `("modifiers", "add", "modifier_name")`
-- Add multiple modifiers: `("modifiers", "add-many", ("modifier_name", quantity))`
-- Remove modifier: `("modifiers", "remove", "modifier_name")`
-- Remove all of a modifier: `("modifiers", "remove-all", "modifier_name")`
-- Clear modifiers: `("modifiers", "clear", None)`
-
-## 5. Game Flow Control
-
-### 5.1 Game Actions
-```python
-scene = Scene(
-    # ...
-    on_enter=[
-        (("game", "exit", None), "condition"),  # Exit application
-        (("game", "goto", "scene_id"), "condition"),  # Jump to scene
-        (("game", "restart", None), "condition"),  # Restart game
-        (("game", "destroy", None), "condition"),  # Destroy current screen
-        (("game", "save", "silent"), "condition"),  # Save game (silent/normal)
-        (("game", "load", "silent"), "condition"),  # Load game (silent/normal)
-        (("game", "notify", "message"), "condition"),  # Show notification
-    ]
-)
-```
-
-## 6. Conditions and Expressions
-
-Use Python expressions for conditions:
-```python
-"'item' in player.inventory"  # Check inventory
-"invdict.get('item', 0) >= amount"  # Check item quantity
-"'modifier' in mods"  # Check modifiers
-"modsdict.get('modifier', 0) > amount"  # Check modifier count
-"vars['variable'] > 5"  # Check variables
-"player.previous.id_ == 'scene_id'"  # Check previous scene
-"random_number > 50"  # Use random number (0-100)
-```
-
-## 7. Assets Management
-
-1. Create an `assets` folder
-2. Store images as PNG/JPG/JPEG
-3. Optional: Add `banner.png` for main menu
-4. Images are automatically resized and converted to ASCII art
-
-## 8. Save/Load System
-
-The game automatically handles save/load functionality if enabled in config:
-- Save button: "S"
-- Load button: "L"
-- Saves are stored in `save.json` using BSON format
+# Required constants for UI
+START = 'Start'
+LOAD = 'Load'
+SAVE = 'Save'
+CREDITS = 'Credits'
+EXIT = 'Exit'
+LANGUAGE = 'Language'
