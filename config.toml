@@ -1,0 +1,7 @@
+name = "Piggy"
+color = "green"
+background = "black"
+utilise_inventory = true
+utilise_saveload = true
+language = "en"
+credits = "Meow\n"
