@@ -254,6 +254,7 @@ class QuestApp(App):
     """
 
     player = Player()
+    player.history = []
     modifiers = []
     variables = {}
 
@@ -343,9 +344,12 @@ class QuestApp(App):
         random_number = random.randint(0, 100)
 
         self.player.current = await meval(
-            f'scenes.scenes_{self.language}.{screen_id}',
+            f'scenes.scenes_{self.language}.{screen_id}'
+            if screen_id[0] != '!' else screen_id[1:],
             globals(),
             scenes=scenes,
+            player=self.player,
+            random=random,
             SYS=SYSTEM_SCENES
         )
 
@@ -492,6 +496,15 @@ class QuestApp(App):
                 MY=my_vars
             ):
                 speaker = t
+
+        items_loctable = eval(f'scenes.scenes_{self.language}.ITEMS')
+        main_text.inventory = '\n'.join(
+            [
+                f'{items_loctable[k]} x{v}'
+                for k, v in
+                self.player.inventory_dict().items()
+            ]
+        ) if self.player.inventory_dict() else eval(f'scenes.scenes_{self.language}.EMPTY')
 
         if self.player.current.sanitize:
             text = escape(text)
@@ -653,9 +666,7 @@ class QuestApp(App):
 
         self.player.current = eval(f'scenes.scenes_{self.language}.first')
 
-        yield Footer(
-            show_command_palette=False,
-        )
+        yield Footer()
 
         return
 
@@ -689,7 +700,8 @@ class QuestApp(App):
                 'inventory': self.player.inventory,
                 'previous': self.player.previous.id_ if self.player.previous else '',
                 'modifiers': self.modifiers,
-                'variables': self.variables
+                'variables': self.variables,
+                'history': [item.__dict__ for item in self.player.history]
             }
 
             data_dumped = bson.dumps(data)
@@ -706,6 +718,8 @@ class QuestApp(App):
                 f'scenes.scenes_{self.language}.{data["current"]}',
                 globals(),
                 scenes=scenes,
+                player=self.player,
+                random=random,
             )
 
             self.player.inventory = data['inventory']
@@ -718,6 +732,8 @@ class QuestApp(App):
 
             self.modifiers = data['modifiers']
             self.variables = data['variables']
+
+            self.history = [Scene(**item) for item in data['history']]
 
             await self.destroy()
             await self.compose_game_screen(data['current'])
@@ -732,6 +748,8 @@ class QuestApp(App):
                 f'scenes.scenes_{self.language}.{data["current"]}',
                 globals(),
                 scenes=scenes,
+                player=self.player,
+                random=random,
             )
 
             self.player.inventory = data['inventory']
@@ -744,6 +762,17 @@ class QuestApp(App):
 
             self.modifiers = data['modifiers']
             self.variables = data['variables']
+
+            self.history = [Scene(**item) for item in data['history']]
+
+            items_loctable = eval(f'scenes.scenes_{self.language}.ITEMS')
+            self.query_one(MainText).inventory = '\n'.join(
+                [
+                    f'{items_loctable[k]} x{v}'
+                    for k, v in
+                    self.player.inventory_dict().items()
+                ]
+            ) if self.player.inventory_dict() else eval(f'scenes.scenes_{self.language}.EMPTY')
 
             await self.destroy_game_screen()
             await self.compose_game_screen(data['current'])
@@ -773,9 +802,12 @@ class QuestApp(App):
             exit(0)
 
         self.player.current = await meval(
-            f'scenes.scenes_{self.language}.{choice[1][0]}' if choice[1][0] != 'SYS.RESTART' else 'SYS.RESTART',
+            f'scenes.scenes_{self.language}.{choice[1][0]}'
+            if choice[1][0][0] != '!' else choice[1][0][1:],
             globals(),
             scenes=scenes,
+            player=self.player,
+            random=random,
             SYS=SYSTEM_SCENES
         )
 
@@ -1024,10 +1056,13 @@ class QuestApp(App):
 
                     elif action_type == 'restart':
                         self.player = Player()
+                        self.player.history = []
                         self.player.current = await meval(
                             f'scenes.scenes_{self.language}.first',
                             globals(),
                             scenes=scenes,
+                            player=self.player,
+                            random=random,
                         )
                         await self.destroy_game_screen()
                         await self.compose_game_screen()
@@ -1047,6 +1082,8 @@ class QuestApp(App):
                             f'scenes.scenes_{self.language}.{data["current"]}',
                             globals(),
                             scenes=scenes,
+                            player=self.player,
+                            random=random,
                         )
 
                         self.player.inventory = data['inventory']
@@ -1059,6 +1096,8 @@ class QuestApp(App):
 
                         self.modifiers = data['modifiers']
                         self.variables = data['variables']
+
+                        self.history = [Scene(**item) for item in data['history']]
 
                         await self.destroy_game_screen()
                         await self.compose_game_screen(data['current'])
@@ -1077,6 +1116,7 @@ class QuestApp(App):
                             'previous': self.player.previous.id_ if self.player.previous else '',
                             'modifiers': self.modifiers,
                             'variables': self.variables,
+                            'history': [item.__dict__ for item in self.history]
                         }
 
                         data_dumped = bson.dumps(data)
@@ -1091,7 +1131,14 @@ class QuestApp(App):
                     elif action_type == 'notify':
                         self.notify(item if isinstance(item, str) else ' '.join(item))
 
-        self.query_one(MainText).inventory = self.player.inventory_with_count()
+        items_loctable = eval(f'scenes.scenes_{self.language}.ITEMS')
+        self.query_one(MainText).inventory = '\n'.join(
+            [
+                f'{items_loctable[k]} x{v}'
+                for k, v in
+                self.player.inventory_dict().items()
+            ]
+        ) if self.player.inventory_dict() else eval(f'scenes.scenes_{self.language}.EMPTY')
 
         buttons = self.query(Button)
 
@@ -1135,6 +1182,8 @@ class QuestApp(App):
 
         button_bar = self.query_one('#buttons')
         await button_bar.mount(*choices)
+
+        self.player.history.append(self.player.current)
 
         self.refresh()
 

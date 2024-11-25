@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Dict, Union
+from typing import List
 
 
 @dataclass
@@ -44,6 +44,7 @@ class Player:
     current: Scene = None
     inventory: List[str] = field(default_factory=list)
     previous: Scene = None
+    history: List[Scene] = None
 
     def inventory_dict(self):
         """

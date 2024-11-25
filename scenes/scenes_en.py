@@ -6,7 +6,7 @@ first = Scene(
     text='Pig says "Oink, give me your money!"',
     image='boar.jpeg',
     exits=[
-        ('Give the pig money', ('give', 'invdict.get("Money", 0) >= 10')),
+        ('Give the pig money', ('give', 'invdict.get("money", 0) >= 10')),
         ('Give the pig money', ('gave', '"money-given" in mods')),
         ('Pray', ('pray', 'True')),
         ('Fight the pig', ('game_over', '"money-given" not in mods')),
@@ -41,9 +41,10 @@ game_over = Scene(
     header='Game Over',
     text='You died.',
     exits=[
-        ('Pig is unavoidable', ('SYS.RESTART', 'player.previous.id_ == "first"')),
-        ('Sorry, gods', ('SYS.RESTART', 'player.previous.id_ == "pray"')),
-        ('Hoofd sees lies', ('SYS.RESTART', 'player.previous.id_ == "hoofd_0"')),
+        ('Pig is unavoidable', ('!SYS.RESTART', 'player.previous.id_ == "first"')),
+        ('Sorry, gods', ('!SYS.RESTART', 'player.previous.id_ == "pray"')),
+        ('Hoofd sees lies', ('!SYS.RESTART', 'player.previous.id_ == "hoofd_0"')),
+        ('What? How did you...', ('!SYS.RESTART', 'player.previous.id_ not in ["first", "pray", "hoofd_0"]')),
     ]
 )
 
@@ -55,12 +56,12 @@ give = Scene(
         ('Back', ('first', 'True')),
     ],
     on_enter=[
-        (('modifiers', 'add', 'money-given'), 'invdict.get("Money", 0) >= 10 and "money-given" not in mods'),
-        (('inventory', 'remove-all', 'Money'), 'invdict.get("Money", 0) >= 10')
+        (('modifiers', 'add', 'money-given'), 'invdict.get("money", 0) >= 10 and "money-given" not in mods'),
+        (('inventory', 'remove-all', 'money'), 'invdict.get("money", 0) >= 10')
     ],
     if_texts=[
-        ('You have no money to give. Pig is unhappy.', 'invdict.get("Money", 0) == 0'),
-        ('Not enough money to give. Pig is unhappy.', 'invdict.get("Money", 0) < 10'),
+        ('You have no money to give. Pig is unhappy.', 'invdict.get("money", 0) == 0'),
+        ('Not enough money to give. Pig is unhappy.', 'invdict.get("money", 0) < 10'),
     ]
 )
 
@@ -82,13 +83,13 @@ pray = Scene(
         ('Back', ('first', 'True')),
     ],
     on_enter=[
-        (('inventory', 'add', 'Money'), 'invdict.get("Money", 0) < 10'),
-        (('modifiers', 'add', 'overpray'), 'invdict.get("Money", 0) >= 10 or "money-given" in mods'),
+        (('inventory', 'add', 'money'), 'invdict.get("money", 0) < 10'),
+        (('modifiers', 'add', 'overpray'), 'invdict.get("money", 0) >= 10 or "money-given" in mods'),
         (('game', 'notify', 'Goodbye.'), 'modsdict.get("overpray", 0) > 3'),
         (('game', 'goto', 'game_over'), 'modsdict.get("overpray", 0) > 3'),
     ],
     if_texts=[
-        ('You have enough money. Do not pray more.', 'invdict.get("Money", 0) >= 10 or "money-given" in mods'),
+        ('You have enough money. Do not pray more.', 'invdict.get("money", 0) >= 10 or "money-given" in mods'),
         ('Please, stop. You have enough money.', 'modsdict.get("overpray", 0) > 1'),
     ]
 )
@@ -96,7 +97,7 @@ pray = Scene(
 hoofd = Scene(
     id_='hoofd',
     header='Strange man on the right',
-    image='hoofd.jpg',
+    image='hoofd.webp',
     text='You approach the strange man. Speak to him or go back?',
     exits=[
         ('Speak to the strange man', ('hoofd_0', 'True')),
@@ -107,7 +108,7 @@ hoofd = Scene(
 hoofd_0 = Scene(
     id_='hoofd_0',
     header='Hoofd, the pilots\' chief',
-    image='hoofd.jpg',
+    image='hoofd.webp',
     text='Hoofd says: "I am the chief of the pilots, but all my pilots are dead. I need a pilot. Are you a pilot?"',
     exits=[
         ('Yes, I am a pilot', ('game_over', 'True')),
@@ -122,22 +123,26 @@ hoofd_0 = Scene(
 hoofd_1 = Scene(
     id_='hoofd_1',
     header='Hoofd, the pilots\' chief',
-    image='hoofd.jpg',
-    text='Hoofd says: "You are not a pilot? Then you are not needed here. Go away."',
+    image='hoofd.webp',
+    text='Hoofd says: "You are not a pilot? Then you are not needed here. Go anywhere back."',
     exits=[
-        ('Back', ('first', 'True')),
+        ('Back', ('!random.choice(player.history[:-1])', 'True')),
     ],
     speaker='Hoofd, the pilots\' chief',
 )
 
 
 GLOBAL_ADDITIONS = [
-    ('Money suffucient to give to the pig.', 'invdict.get("Money", 0) >= 10 and player.current.id_ != "give"'),
+    ('Money suffucient to give to the pig.', 'invdict.get("money", 0) >= 10 and player.current.id_ != "give"'),
 ]
 
 GLOBAL_IMAGES = []
 
 MY_VARS = {}
+
+ITEMS = {
+    'money': 'Money'
+}
 
 START = 'Start'
 LOAD = 'Load'
@@ -150,3 +155,4 @@ LANGUAGE = 'Language'
 SAVED = 'Saved'
 LOADED = 'Loaded'
 RESTART_NEEDED = 'Some changes will take effect only after restarting the game.'
+EMPTY = 'Empty'
